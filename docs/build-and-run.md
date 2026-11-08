@@ -251,7 +251,7 @@ KB
 
 | コマンド | 動作 |
 |---|---|
-| `make` | Makefileのデフォルトターゲットを実行 |
+| `make` | カーネルをビルド |
 | `make build` | カーネルをビルド |
 | `make image` | 起動ディスクを再生成 |
 | `make run` | QEMUで起動 |
