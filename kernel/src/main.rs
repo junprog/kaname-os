@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+mod boot;
+
 use core::panic::PanicInfo;
 
 static mut BUFFER: [u8; 4096] = [0; 4096];
