@@ -48,6 +48,22 @@ pub extern "C" fn _start() -> ! {
 
     debug_putchar(b'B');
 
+    match boot::limine::framebuffer_info() {
+        Some(info) => {
+            if !info.address.is_null()
+                && info.width > 0
+                && info.height > 0
+                && info.pitch > 0
+                && info.bpp > 0
+            {
+                debug_putchar(b'F');
+            } else {
+                debug_putchar(b'E');
+            }
+        }
+        None => debug_putchar(b'N'),
+    }
+
     unsafe {
         let ptr = core::ptr::addr_of_mut!(BUFFER) as *mut u8;
         core::ptr::write_volatile(ptr, 42);

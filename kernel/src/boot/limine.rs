@@ -1,6 +1,6 @@
 #[repr(C)]
 pub struct Framebuffer {
-    pub address: *mut u64,
+    pub address: *mut u8,
     pub pitch: u64,
     pub width: u64,
     pub height: u64,
@@ -49,7 +49,7 @@ const _: () = assert!(core::mem::size_of::<FramebufferRequest>() == 48);
 
 #[used]
 #[unsafe(link_section = ".limine_requests")]
-static mut FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest {
+static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest {
     id: [
         0xc7b1dd30df4c8b88,
         0x0a82e883a194f07b,
@@ -59,3 +59,73 @@ static mut FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest {
     revision: 0,
     response: UnsafeCell::new(core::ptr::null_mut()),
 };
+
+pub fn framebuffer_count() -> Option<u64> {
+    // SAFETY:
+    // Limineはカーネルへの制御移譲前にresponseを書き込む。
+    // カーネル起動後は書き換えられない。
+    let response_ptr = unsafe { core::ptr::read_volatile(FRAMEBUFFER_REQUEST.response.get()) };
+
+    if response_ptr.is_null() {
+        return None;
+    }
+
+    // SAFETY:
+    // Limineが返した非NULLポインタは、有効な
+    // FramebufferResponse構造体を指すという
+    // Limineプロトコルの保証に依存する。
+    let response = unsafe { &*response_ptr };
+    Some(response.framebuffer_count)
+}
+
+// kanameOS内でFramebuffer使用するための型
+// なので、#[repr(C)] はつけない
+pub struct FramebufferInfo {
+    pub address: *mut u8,
+    pub width: u64,
+    pub height: u64,
+    pub pitch: u64,
+    pub bpp: u16,
+}
+
+pub fn framebuffer_info() -> Option<FramebufferInfo> {
+    // SAFETY:
+    // Limineはカーネルへの制御移譲前にresponseを書き込む。
+    // 以後、このフィールドは変更されない。
+    let response_ptr = unsafe { core::ptr::read_volatile(FRAMEBUFFER_REQUEST.response.get()) };
+
+    if response_ptr.is_null() {
+        return None;
+    }
+
+    // SAFETY:
+    // Limineが返したResponseポインタは、
+    // 有効なFramebufferResponseを指すという
+    // ブートプロトコルの保証に依存する。
+    let response = unsafe { &*response_ptr };
+
+    if response.framebuffer_count == 0 || response.framebuffers.is_null() {
+        return None;
+    }
+
+    // SAFETY:
+    // framebuffer_countが1以上なので、
+    // Limineの保証により配列の先頭要素が存在する。
+    let framebuffer_ptr = unsafe { *response.framebuffers };
+
+    if framebuffer_ptr.is_null() {
+        return None;
+    }
+
+    // SAFETY:
+    // Limineが提供する有効なFramebuffer構造体を参照する。
+    let framebuffer = unsafe { &*framebuffer_ptr };
+
+    Some(FramebufferInfo {
+        address: framebuffer.address,
+        width: framebuffer.width,
+        height: framebuffer.height,
+        pitch: framebuffer.pitch,
+        bpp: framebuffer.bpp,
+    })
+}
