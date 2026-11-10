@@ -1,9 +1,9 @@
 #[repr(C)]
 pub struct Framebuffer {
     pub address: *mut u8,
-    pub pitch: u64,
     pub width: u64,
     pub height: u64,
+    pub pitch: u64,
     pub bpp: u16,
     pub memory_model: u8,
     pub red_mask_size: u8,
@@ -60,24 +60,6 @@ static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest {
     response: UnsafeCell::new(core::ptr::null_mut()),
 };
 
-pub fn framebuffer_count() -> Option<u64> {
-    // SAFETY:
-    // Limineはカーネルへの制御移譲前にresponseを書き込む。
-    // カーネル起動後は書き換えられない。
-    let response_ptr = unsafe { core::ptr::read_volatile(FRAMEBUFFER_REQUEST.response.get()) };
-
-    if response_ptr.is_null() {
-        return None;
-    }
-
-    // SAFETY:
-    // Limineが返した非NULLポインタは、有効な
-    // FramebufferResponse構造体を指すという
-    // Limineプロトコルの保証に依存する。
-    let response = unsafe { &*response_ptr };
-    Some(response.framebuffer_count)
-}
-
 // kanameOS内でFramebuffer使用するための型
 // なので、#[repr(C)] はつけない
 pub struct FramebufferInfo {
@@ -86,6 +68,13 @@ pub struct FramebufferInfo {
     pub height: u64,
     pub pitch: u64,
     pub bpp: u16,
+    pub memory_model: u8,
+    pub red_mask_size: u8,
+    pub red_mask_shift: u8,
+    pub green_mask_size: u8,
+    pub green_mask_shift: u8,
+    pub blue_mask_size: u8,
+    pub blue_mask_shift: u8,
 }
 
 pub fn framebuffer_info() -> Option<FramebufferInfo> {
@@ -127,5 +116,12 @@ pub fn framebuffer_info() -> Option<FramebufferInfo> {
         height: framebuffer.height,
         pitch: framebuffer.pitch,
         bpp: framebuffer.bpp,
+        memory_model: framebuffer.memory_model,
+        red_mask_size: framebuffer.red_mask_size,
+        red_mask_shift: framebuffer.red_mask_shift,
+        green_mask_size: framebuffer.green_mask_size,
+        green_mask_shift: framebuffer.green_mask_shift,
+        blue_mask_size: framebuffer.blue_mask_size,
+        blue_mask_shift: framebuffer.blue_mask_shift,
     })
 }

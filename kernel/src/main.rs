@@ -2,6 +2,7 @@
 #![no_main]
 
 mod boot;
+mod graphics;
 
 use core::panic::PanicInfo;
 
@@ -30,6 +31,20 @@ fn debug_putchar(c: u8) {
     }
 }
 
+fn debug_hex(value: u64) {
+    for i in (0..16).rev() {
+        let digit = ((value >> (i * 4)) & 0xF) as u8;
+
+        let c = if digit < 10 {
+            b'0' + digit
+        } else {
+            b'A' + (digit - 10)
+        };
+
+        debug_putchar(c);
+    }
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
     debug_putchar(b'K');
@@ -50,16 +65,56 @@ pub extern "C" fn _start() -> ! {
 
     match boot::limine::framebuffer_info() {
         Some(info) => {
-            if !info.address.is_null()
-                && info.width > 0
-                && info.height > 0
-                && info.pitch > 0
-                && info.bpp > 0
-            {
-                debug_putchar(b'F');
-            } else {
-                debug_putchar(b'E');
-            }
+            debug_putchar(b'\n');
+
+            debug_putchar(b'W');
+            debug_hex(info.width);
+
+            debug_putchar(b'\n');
+
+            debug_putchar(b'H');
+            debug_hex(info.height);
+
+            debug_putchar(b'\n');
+
+            debug_putchar(b'P');
+            debug_hex(info.pitch);
+
+            debug_putchar(b'\n');
+
+            debug_putchar(b'B');
+            debug_hex(info.bpp as u64);
+
+            debug_putchar(b'\n');
+
+            debug_putchar(b'A');
+            debug_hex(info.address as u64);
+
+            // ピクセルのメモリモデル
+            debug_putchar(b'\n');
+            debug_putchar(b'M');
+            debug_hex(info.memory_model as u64);
+
+            // 赤のビット数とシフト量
+            debug_putchar(b'\n');
+            debug_putchar(b'R');
+            debug_hex(info.red_mask_size as u64);
+            debug_putchar(b':');
+            debug_hex(info.red_mask_shift as u64);
+
+            // 緑のビット数とシフト量
+            debug_putchar(b'\n');
+            debug_putchar(b'G');
+            debug_hex(info.green_mask_size as u64);
+            debug_putchar(b':');
+            debug_hex(info.green_mask_shift as u64);
+
+            // 青のビット数とシフト量
+            debug_putchar(b'\n');
+            debug_putchar(b'U');
+            debug_hex(info.blue_mask_size as u64);
+            debug_putchar(b':');
+            debug_hex(info.blue_mask_shift as u64);
         }
         None => debug_putchar(b'N'),
     }
