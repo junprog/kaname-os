@@ -10,6 +10,7 @@ RustでOSをゼロから作るための学習記録です。各章は「背景 �
 4. [カーネルの基礎](04-kernel-fundamentals.md)
 5. [カーネルのビルドとELF](05-building-the-kernel.md)
 6. [Limineのブートプロトコル](06-limine-boot-protocol.md)
+6. [FrameBufferの基礎](07-framebuffer.md)
 * [ビルドガイド](build-and-run.md)
 * [用語集](glossary.md)
 
