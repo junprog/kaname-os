@@ -5,6 +5,7 @@ mod boot;
 mod graphics;
 
 use core::panic::PanicInfo;
+use graphics::framebuffer::Framebuffer;
 
 static mut BUFFER: [u8; 4096] = [0; 4096];
 
@@ -115,6 +116,56 @@ pub extern "C" fn _start() -> ! {
             debug_hex(info.blue_mask_size as u64);
             debug_putchar(b':');
             debug_hex(info.blue_mask_shift as u64);
+
+            // SAFETY:
+            // Limineが提供したFramebufferのメモリを使用する。
+            // カーネルはこのFramebufferを単独で管理し、
+            // 他のコードから競合するアクセスを行わない。
+            let Some(mut framebuffer) = (unsafe { Framebuffer::new(info) }) else {
+                debug_putchar(b'E');
+
+                loop {
+                    core::hint::spin_loop();
+                }
+            };
+
+            debug_putchar(b'\n');
+
+            if framebuffer.verify_offset() {
+                debug_putchar(b'O');
+            } else {
+                debug_putchar(b'E');
+            }
+
+            debug_putchar(b'\n');
+
+            if framebuffer.is_supported() {
+                debug_putchar(b'S');
+            } else {
+                debug_putchar(b'E');
+            }
+
+            // 画面中央付近に赤いピクセルを描画する。
+            if framebuffer.put_pixel(640, 400, 255, 0, 0) {
+                debug_putchar(b'P');
+            } else {
+                debug_putchar(b'E');
+            }
+
+            // 画面中央付近に赤い矩形を描画する。
+            framebuffer.fill_rect(540, 350, 200, 100, 255, 0, 0);
+            debug_putchar(b'R');
+
+            // 実験
+            // 先に青い矩形を描く。
+            framebuffer.fill_rect(540, 350, 200, 100, 0, 0, 255);
+
+            // その後、中央に赤いピクセルを描く。
+            framebuffer.put_pixel(640, 400, 255, 0, 0);
+
+            // 画面に白い文字Aを描画する。
+            framebuffer.draw_char(640, 400, 255, 255, 255);
+            debug_putchar(b'T');
         }
         None => debug_putchar(b'N'),
     }
